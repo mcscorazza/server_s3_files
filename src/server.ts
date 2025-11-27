@@ -37,6 +37,7 @@ fastify.get("/api/csv", async (request, reply) => {
     const csvContent = await s3Repo.getCsvContent(file);
     reply.type("text/csv").send(csvContent);
   } catch (err) {
+    console.error(err);
     request.log.error(err);
     return reply
       .status(500)

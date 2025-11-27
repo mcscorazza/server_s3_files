@@ -11,9 +11,9 @@ export class S3Repository {
 
   constructor() {
     this.client = new S3Client({
-      region: process.env.AWS_REGION || "us-east-1",
+      region: process.env.AWS_REGION || "sa-east-1",
     });
-    this.bucketName = process.env.S3_BUCKET_NAME || "seu-bucket-padrao";
+    this.bucketName = process.env.S3_BUCKET_NAME || "svx-csv";
   }
 
   async uploadCsv(fileName: string, csvContent: string): Promise<void> {
