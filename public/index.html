@@ -31,12 +31,14 @@
 
       .dashboard-container {
         display: flex;
+        flex-wrap: wrap;
         flex: 1;
         gap: 15px;
         min-height: 0;
       }
       .panel {
         flex: 1;
+        min-width: 300px;
         border: 1px solid #ddd;
         border-radius: 8px;
         overflow: hidden;
@@ -123,7 +125,7 @@
         id="filename"
         placeholder="cole o nome do arquivo.csv aqui"
         value="sensors_2decd2dc-e720-4cb7-9d4c-73dbe81785fe_1764189082997.csv"
-        style="width: 500px"
+        style="max-width: 500px; width: 90%"
       />
       <button onclick="carregarDados()">Carregar Dashboard</button>
       <div id="sensor-buttons"></div>
@@ -175,7 +177,7 @@
     </div>
 
     <script>
-      const API_URL = "/api/csv";
+      const API_URL = "https://dash.svxdigital.com/api/csv";
       let globalData = [];
 
       const chartDiv = document.getElementById("chart-div");
