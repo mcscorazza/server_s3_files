@@ -21,10 +21,6 @@ await fastify.register(fastifyStatic, {
   prefix: "/",
 });
 
-fastify.get("/", async () => {
-  return { status: "API do Vagão Digital Online 🚀" };
-});
-
 fastify.get("/api/csv", async (request, reply) => {
   const { file } = request.query as { file: string };
 
@@ -38,7 +34,7 @@ fastify.get("/api/csv", async (request, reply) => {
     const csvBuffer = await s3Repo.getCsvContent(file);
     reply
       .header("Content-Type", "text/csv")
-      .header("Content-Encoding", "gzip") // <--- AVISA O NAVEGADOR PARA DESCOMPACTAR
+      .header("Content-Encoding", "gzip")
       .send(csvBuffer);
   } catch (err) {
     console.error(err);
@@ -51,7 +47,7 @@ fastify.get("/api/csv", async (request, reply) => {
 
 const start = async () => {
   try {
-    const port = 3000;
+    const port = 3030;
     await fastify.listen({ port, host: "0.0.0.0" });
     console.log(`\n📡 Servidor rodando em: http://localhost:${port}`);
     console.log(
