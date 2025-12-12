@@ -1,9 +1,4 @@
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import { Readable } from "stream";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 
 export class S3Repository {
   private client: S3Client;
@@ -16,27 +11,17 @@ export class S3Repository {
     this.bucketName = process.env.S3_BUCKET_NAME || "svx-csv";
   }
 
-  async uploadCsv(fileName: string, csvContent: string): Promise<void> {
-    const command = new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: `sensores/${fileName}`,
-      Body: csvContent,
-      ContentType: "text/csv",
-    });
-
-    await this.client.send(command);
-    console.log(`[S3] Arquivo ${fileName} enviado com sucesso.`);
-  }
-
-  async getCsvContent(fileName: string): Promise<string> {
+  async getCsvContent(key: string): Promise<Buffer> {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
-      Key: `sensores/${fileName}`,
+      Key: key,
     });
 
     const response = await this.client.send(command);
+
     if (response.Body) {
-      return response.Body.transformToString();
+      const byteArray = await response.Body.transformToByteArray();
+      return Buffer.from(byteArray);
     } else {
       throw new Error("Arquivo vazio ou não encontrado no S3");
     }

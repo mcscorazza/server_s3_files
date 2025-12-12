@@ -27,15 +27,19 @@ fastify.get("/", async () => {
 
 fastify.get("/api/csv", async (request, reply) => {
   const { file } = request.query as { file: string };
+
   if (!file) {
     return reply
       .status(400)
       .send({ error: "Nome do arquivo é obrigatório (?file=...)" });
   }
   try {
-    console.log(`Buscando arquivo no S3: ${file}`);
-    const csvContent = await s3Repo.getCsvContent(file);
-    reply.type("text/csv").send(csvContent);
+    console.log(`Buscando arquivo (GZIP) no S3: ${file}`);
+    const csvBuffer = await s3Repo.getCsvContent(file);
+    reply
+      .header("Content-Type", "text/csv")
+      .header("Content-Encoding", "gzip") // <--- AVISA O NAVEGADOR PARA DESCOMPACTAR
+      .send(csvBuffer);
   } catch (err) {
     console.error(err);
     request.log.error(err);

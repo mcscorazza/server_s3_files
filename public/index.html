@@ -124,7 +124,7 @@
         type="text"
         id="filename"
         placeholder="cole o nome do arquivo.csv aqui"
-        value="sensors_2decd2dc-e720-4cb7-9d4c-73dbe81785fe_1764189082997.csv"
+        value="sensors_e25d9c5e-a796-4933-9b1a-33fb36fe7f41_1764335181797.csv"
         style="max-width: 500px; width: 90%"
       />
       <button onclick="carregarDados()">Carregar Dashboard</button>
@@ -184,18 +184,21 @@
       const mapDiv = document.getElementById("map-div");
 
       async function carregarDados() {
-        const filename = document.getElementById("filename").value;
-        if (!filename) {
-          alert("Digite o nome do arquivo!");
+        const batchId = document.getElementById("filename").value;
+        if (!batchId) {
+          alert("Digite o ID do pacote de dados!");
           return;
         }
+
+        const pathLite = `sensores/lite/${batchId}.csv`;
+        const urlLite = `${API_URL}?file=${encodeURIComponent(pathLite)}`;
 
         chartDiv.innerHTML = '<p style="padding:20px">Carregando dados...</p>';
         mapDiv.innerHTML = '<p style="padding:20px">Carregando mapa...</p>';
         document.getElementById("sensor-buttons").innerHTML = "";
 
         try {
-          const response = await fetch(`${API_URL}?file=${filename}`);
+          const response = await fetch(urlLite);
           if (!response.ok) throw new Error("Erro na API");
           const csvText = await response.text();
 
