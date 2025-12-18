@@ -22,11 +22,34 @@
         border-radius: 8px;
         margin-bottom: 15px;
         flex-shrink: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
       }
-      input,
+      input[type="text"],
       button {
         padding: 8px 12px;
         font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      .toggle-container {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        user-select: none;
       }
 
       .dashboard-container {
@@ -62,15 +85,23 @@
         display: flex;
         gap: 5px;
         flex-wrap: wrap;
+        width: 100%;
       }
       .sensor-btn {
         cursor: pointer;
         background: #fff;
+        color: #333;
         border: 1px solid #ccc;
         padding: 5px 10px;
         border-radius: 4px;
         font-size: 12px;
+        transition: all 0.2s;
       }
+
+      .sensor-btn:hover {
+        background-color: #f0f0f0;
+      }
+
       .sensor-btn.active {
         background: #007bff;
         color: white;
@@ -80,14 +111,14 @@
         display: flex;
         gap: 15px;
         margin-bottom: 15px;
-        flex-wrap: wrap; /* Garante que não quebre em telas pequenas */
+        flex-wrap: wrap;
       }
 
       .card {
         background: white;
         padding: 15px;
         border-radius: 8px;
-        flex: 1; /* Faz todos ocuparem o mesmo espaço */
+        flex: 1;
         min-width: 150px;
         text-align: center;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -115,19 +146,34 @@
         display: block;
         margin-bottom: 2px;
       }
+
+      .loading-msg {
+        font-weight: bold;
+        color: #666;
+        margin-left: 10px;
+        display: none;
+      }
     </style>
   </head>
   <body>
     <div class="controls">
-      <label for="filename">Arquivo S3:</label>
+      <label for="filename">Batch ID:</label>
       <input
         type="text"
         id="filename"
-        placeholder="cole o nome do arquivo.csv aqui"
-        value="sensors_e25d9c5e-a796-4933-9b1a-33fb36fe7f41_1764335181797.csv"
-        style="max-width: 500px; width: 90%"
+        placeholder="Ex: VIAGEM-001"
+        style="width: 250px"
       />
-      <button onclick="carregarDados()">Carregar Dashboard</button>
+
+      <button onclick="carregarDados()">Visualizar</button>
+
+      <label class="toggle-container">
+        <input type="checkbox" id="rawCheckbox" onchange="alternarModo()" />
+        <span>Modo Alta Resolução (Dados Brutos)</span>
+      </label>
+
+      <span id="loading-indicator" class="loading-msg">⏳ Carregando...</span>
+
       <div id="sensor-buttons"></div>
     </div>
 
@@ -182,24 +228,46 @@
 
       const chartDiv = document.getElementById("chart-div");
       const mapDiv = document.getElementById("map-div");
+      const loadingIndicator = document.getElementById("loading-indicator");
+
+      function alternarModo() {
+        const batchId = document.getElementById("filename").value;
+        if (batchId) {
+          carregarDados();
+        }
+      }
 
       async function carregarDados() {
-        const batchId = document.getElementById("filename").value;
+        let batchId = document.getElementById("filename").value.trim();
         if (!batchId) {
           alert("Digite o ID do pacote de dados!");
           return;
         }
 
-        const pathLite = `sensores/lite/${batchId}.csv`;
-        const urlLite = `${API_URL}?file=${encodeURIComponent(pathLite)}`;
+        batchId = batchId.replace(".csv", "");
+        const isRaw = document.getElementById("rawCheckbox").checked;
+        const folder = isRaw ? "raw" : "lite";
+        const s3Key = `sensores/${folder}/${batchId}.csv`;
+        const url = `${API_URL}?file=${encodeURIComponent(s3Key)}`;
 
-        chartDiv.innerHTML = '<p style="padding:20px">Carregando dados...</p>';
-        mapDiv.innerHTML = '<p style="padding:20px">Carregando mapa...</p>';
+        loadingIndicator.style.display = "inline";
+        loadingIndicator.innerText = isRaw
+          ? "⏳ Baixando Alta Resolução..."
+          : "⏳ Carregando Rápido...";
+
+        chartDiv.innerHTML = "";
         document.getElementById("sensor-buttons").innerHTML = "";
 
         try {
-          const response = await fetch(urlLite);
-          if (!response.ok) throw new Error("Erro na API");
+          console.log(`Buscando: ${url}`);
+          const response = await fetch(url);
+
+          if (!response.ok) {
+            if (response.status === 404)
+              throw new Error("Arquivo não encontrado. Verifique o ID.");
+            throw new Error("Erro na API");
+          }
+
           const csvText = await response.text();
 
           const parsed = Papa.parse(csvText, {
@@ -229,6 +297,7 @@
             y: globalData.map((row) => row[sensorId]),
             visible: false,
           }));
+
           if (chartTraces.length > 0) chartTraces[0].visible = true;
 
           const chartLayout = {
@@ -244,6 +313,7 @@
           });
 
           criarBotoes(sensorIds);
+
           const tracePath = {
             type: "scattermapbox",
             mode: "lines",
@@ -256,7 +326,6 @@
             hoverinfo: "text",
           };
 
-          // TRACE 1: O Cursor (Vermelho)
           const traceCursor = {
             type: "scattermapbox",
             mode: "markers",
@@ -285,22 +354,30 @@
             responsive: true,
           });
 
-          // Inicia a lógica de interação bidirecional
           iniciarSincronizacao(lats, lons);
         } catch (error) {
           console.error(error);
-          chartDiv.innerHTML = `<p style="color:red; padding:20px">Erro: ${error.message}</p>`;
+          chartDiv.innerHTML = `<div style="color:red; padding:20px; text-align:center">
+            <h3>Erro ao carregar dados</h3>
+            <p>${error.message}</p>
+          </div>`;
           mapDiv.innerHTML = "";
+        } finally {
+          loadingIndicator.style.display = "none";
         }
       }
 
       function iniciarSincronizacao(lats, lons) {
         const moverCursorMapa = (index) => {
+          if (index >= lats.length) return;
+
           const newLat = lats[index];
           const newLon = lons[index];
           Plotly.restyle(mapDiv, { lat: [[newLat]], lon: [[newLon]] }, [1]);
         };
+
         chartDiv.on("plotly_hover", function (eventData) {
+          if (!eventData || !eventData.points) return;
           const pointIndex = eventData.points[0].pointIndex;
           moverCursorMapa(pointIndex);
         });
@@ -308,7 +385,9 @@
         mapDiv.on("plotly_hover", function (eventData) {
           const ponto = eventData.points[0];
           if (ponto.curveNumber === 1) return;
+
           const pointIndex = ponto.pointIndex;
+
           const alvosParaHover = [];
           chartDiv.data.forEach((trace, index) => {
             if (trace.visible === true || trace.visible === undefined) {
@@ -318,6 +397,7 @@
               });
             }
           });
+
           if (alvosParaHover.length > 0) {
             Plotly.Fx.hover(chartDiv, alvosParaHover);
           }
@@ -372,7 +452,7 @@
         container.style.display = "flex";
 
         if (timestamps.length > 0) {
-          const fmt = (d) => d.toLocaleString("pt-BR"); // Formato: DD/MM/AAAA HH:MM:SS
+          const fmt = (d) => d.toLocaleString("pt-BR");
           document.getElementById("card-start").innerText = fmt(timestamps[0]);
           document.getElementById("card-end").innerText = fmt(
             timestamps[timestamps.length - 1]
@@ -389,6 +469,7 @@
               if (val > max) max = val;
             }
           }
+          if (min === Infinity) return { min: 0, max: 0 };
           return { min, max };
         };
 
