@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
@@ -284,7 +284,7 @@
           const lats = globalData.map((row) => row.lat || 0);
           const lons = globalData.map((row) => row.lon || 0);
           const sensorIds = headers.filter(
-            (h) => !["timestamp", "lat", "lon"].includes(h)
+            (h) => !["timestamp", "lat", "lon"].includes(h),
           );
 
           atualizarCards(timestamps, globalData, sensorIds);
@@ -434,10 +434,10 @@
 
       function atualizarGrafico() {
         const botoes = Array.from(
-          document.querySelectorAll(".sensor-btn")
+          document.querySelectorAll(".sensor-btn"),
         ).filter((b) => b.innerText !== "Limpar Tudo");
         const visibilidades = botoes.map((btn) =>
-          btn.classList.contains("active")
+          btn.classList.contains("active"),
         );
         Plotly.restyle(chartDiv, { visible: visibilidades });
       }
@@ -455,7 +455,7 @@
           const fmt = (d) => d.toLocaleString("pt-BR");
           document.getElementById("card-start").innerText = fmt(timestamps[0]);
           document.getElementById("card-end").innerText = fmt(
-            timestamps[timestamps.length - 1]
+            timestamps[timestamps.length - 1],
           );
         }
 
@@ -499,6 +499,16 @@
           document.getElementById("val-max-n").innerText = "-";
         }
       }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const idUrl = params.get("id");
+
+        if (idUrl) {
+          document.getElementById("filename").value = idUrl;
+          carregarDados();
+        }
+      });
     </script>
   </body>
 </html>
