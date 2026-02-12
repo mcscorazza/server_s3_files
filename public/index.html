@@ -296,6 +296,7 @@
             x: timestamps,
             y: globalData.map((row) => row[sensorId]),
             visible: false,
+            connectgaps: true,
           }));
 
           if (chartTraces.length > 0) chartTraces[0].visible = true;
@@ -303,8 +304,16 @@
           const chartLayout = {
             margin: { t: 30, b: 40, l: 50, r: 20 },
             hovermode: "x unified",
-            xaxis: { title: "Horário" },
-            yaxis: { title: "Valor" },
+            xaxis: {
+              title: "Horário",
+              rangeslider: { visible: false },
+            },
+            yaxis: {
+              title: "Valor",
+              autorange: true,
+              fixedrange: false,
+            },
+            renderStrategy: "webgl",
           };
 
           chartDiv.innerHTML = "";
